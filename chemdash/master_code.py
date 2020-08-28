@@ -37,6 +37,7 @@ from builtins import range
 import collections
 import copy
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -568,6 +569,14 @@ def ChemDASH(calc_name):
             output.write("\n")
 
         # =====================================================================
+        # Refine if needed by running vasp_fine_settings on the best_structure
+        if final_refine:
+            os.makedir('./FINE')
+            shutil.move('POTCAR', './FINE')
+            os.chdir('./FINE')
+            final_energy = vasp_calc.final_stage_vasp_calc(best_structure, params["vasp_final_settings"]["value"])
+            os.chdir('..')
+
         # Finish up
 
         write_restart_file(best_structure, current_structure, atomic_numbers_list,
@@ -589,6 +598,10 @@ def ChemDASH(calc_name):
 
         output.write("\n")
         output.write("Time taken: {0:f}s\n".format(time.time() - start_time))
+        
+        if final_refine:
+            output.write("\n")
+            output.write("Final energy of best structure (calculated with fine settings) {1:.8f} eV, and has been written to best_fine.cif".format(final_energy))
 
     return None
 
@@ -670,6 +683,25 @@ class Structure(object):
 
         self.atoms.write(filename, format="cif")
 
+    # =========================================================================
+    def write_poscar(self, filename='POSCAR'):
+        """
+        Write the structure to a POSCAR file.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the POSCAR file.
+
+        Returns
+        -------
+        None
+
+        -----------------------------------------------------------------------
+        Paul Sharp 26/08/2020
+        """
+
+        self.atoms.write(filename, format="vasp")
 
 # =============================================================================
 # =============================================================================

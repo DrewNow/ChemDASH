@@ -31,6 +31,41 @@ import time
 
 # =============================================================================
 # =============================================================================
+
+def final_stage_vasp_calc(structure, main_settings):
+    """
+    Run a final VASP calculation with fine settings. 
+
+    Parameters
+    ----------
+    structure : ChemDASH Structure
+        The structure class containing the ase atoms object to be used in the VASP calculation.
+    main_settings : dict
+        List of VASP settings for the calculation.
+    max_convergence_calcs : int
+        The maximum number of VASP calculations run for the final stage -- after this the calculation is considered unconverged.
+
+    Returns
+    -------
+    energy : float
+        Energy of the structure in eV.
+
+    ---------------------------------------------------------------------------
+    Andrij Vasylenko 27/08/2020
+    """
+    # Strip out X atoms from the structure - they are only there to mark vacancies and have no POTCAR file.
+    vacancy_positions = determine_vacancy_positions(structure.atoms.copy())
+    del structure.atoms[[atom.index for atom in structure.atoms if atom.symbol == "X"]]
+
+    vasp_settings = main_settings.copy()
+
+    structure.atoms, structure.energy, result = run_vasp(structure.atoms, vasp_settings)
+ 
+    structure.write_cif("../best_fine.cif")
+
+    return structure.energy
+
+
 def multi_stage_vasp_calc(structure, num_calcs, vasp_file, main_settings,
                           additional_settings, max_convergence_calcs,
                           save_outcar):
